@@ -1,0 +1,140 @@
+.calculator {
+  width: 320px;
+  margin: 0 auto;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+.calculator::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  transform: rotate(30deg);
+}
+
+.display {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 25px;
+  text-align: right;
+  color: white;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.expression {
+  font-size: 16px;
+  min-height: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  word-break: break-all;
+}
+
+.current-input {
+  font-size: 36px;
+  font-weight: bold;
+  margin-top: 8px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.row {
+  display: flex;
+  gap: 15px;
+}
+
+button {
+  flex: 1;
+  height: 60px;
+  border: none;
+  border-radius: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+button:hover::after {
+  opacity: 1;
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.number-btn {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.number-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.operator-btn {
+  background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+  color: #333;
+}
+
+.operator-btn:hover {
+  background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 70%, #fad0c4 100%);
+}
+
+.function-btn {
+  background: linear-gradient(to right, #a1c4fd 0%, #c2e9fb 100%);
+  color: #333;
+}
+
+.function-btn:hover {
+  background: linear-gradient(to right, #a1c4fd 0%, #c2e9fb 70%);
+}
+
+.equals-btn {
+  background: linear-gradient(to right, #84fab0 0%, #8fd3f4 100%);
+  color: #333;
+  flex: 1;
+}
+
+.equals-btn:hover {
+  background: linear-gradient(to right, #84fab0 0%, #8fd3f4 70%);
+}
+
+.span-2 {
+  flex: 2;
+}
+
+.span-3 {
+  flex: 3;
+}
