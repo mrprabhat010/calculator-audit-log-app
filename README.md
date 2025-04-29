@@ -38,11 +38,6 @@ A modern calculator application with full audit logging capabilities, built with
 - MongoDB
 - Mongoose
 
-### Testing
-- Vitest
-- React Testing Library
-- MSW (Mock Service Worker)
-
 ## Installation
 
 ### Prerequisites
@@ -63,7 +58,7 @@ cp .env.example .env
 
 cd ../frontend
 npm install
-cp .env.example .env
+cp .env
 # Edit .env with your API base URL
 
 cd backend
