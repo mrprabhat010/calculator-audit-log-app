@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import './Calculator.css';
 import auditService from '../Services/auditService';
 
-const MAX_INPUT_LENGTH = 10;
-const MAX_OUTPUT_LENGTH = 16;
+const MAX_INPUT_LENGTH = 9;
+const MAX_OUTPUT_LENGTH = 12;
 
 //util function
 const formatNumber = (num) => {
@@ -53,16 +53,19 @@ const Calculator = () => {
   };
 
   const inputDigit = (digit) => {
-    if (currentInput?.toString().replace('.', '').length >= MAX_INPUT_LENGTH) return;
+    const digitString = digit.toString()
     if (waitingForOperand) {
-      setCurrentInput(String(digit));
+      // Starting new input after operator
+      setCurrentInput(digit);
+      setExpression(prev => `${prev}${digit}`);
       setWaitingForOperand(false);
-      setExpression(expression + String(digit));
     } else {
-      setCurrentInput(currentInput === '0' ? String(digit) : currentInput + digit);
-      setExpression(expression === '' ? String(digit) : expression + String(digit));
+      // Continuing current input
+      if (currentInput.toString().replace('.', '').length >= MAX_INPUT_LENGTH) return;
+      setCurrentInput(prev => prev === '0' ? digitString : prev + digitString);
+      setExpression(prev => prev === '' ? digitString : prev + digitString);
     }
-    logAction('numberEntered', digit);
+    logAction('numberEntered', digitString);
   };
 
   const inputDecimal = () => {
@@ -84,50 +87,29 @@ const Calculator = () => {
   const performOperation = (nextOperator) => {
     const inputValue = parseFloat(currentInput);
 
-    // If there's an existing operator and we're not waiting for a new operand
     if (operator && !waitingForOperand) {
       const currentValue = prevValue || 0;
       let newValue;
       
       switch (operator) {
-        case '+':
-          newValue = currentValue + inputValue;
-          break;
-        case '-':
-          newValue = currentValue - inputValue;
-          break;
-        case '*':
-          newValue = currentValue * inputValue;
-          break;
-        case '/':
-          newValue = currentValue / inputValue;
-          break;
-        default:
-          newValue = inputValue;
+        case '+': newValue = currentValue + inputValue; break;
+        case '-': newValue = currentValue - inputValue; break;
+        case '*': newValue = currentValue * inputValue; break;
+        case '/': newValue = currentValue / inputValue; break;
+        default: newValue = inputValue;
       }
 
       setPrevValue(newValue);
       setCurrentInput(String(newValue));
+      // Only show current operation in expression
+      setExpression(`${newValue}${nextOperator}`);
     } else if (!waitingForOperand) {
-      // No operator yet, just store the current input
       setPrevValue(inputValue);
-    }
-
-    // Update the expression with the operator (unless it's the first input)
-    if (expression !== '' || nextOperator === '-') {
-      // Handle negative numbers
-      if (nextOperator === '-' && (expression === '' || 
-          ['+', '-', '*', '/'].includes(expression.slice(-1)))) {
-        setExpression(expression + nextOperator);
-      } else {
-        // Replace the last operator if user changes their mind
-        const lastChar = expression.slice(-1);
-        if (['+', '-', '*', '/'].includes(lastChar)) {
-          setExpression(expression.slice(0, -1) + nextOperator);
-        } else {
-          setExpression(expression + nextOperator);
-        }
-      }
+      // Start new operation expression
+      setExpression(`${inputValue}${nextOperator}`);
+    } else {
+      // Just update the operator in expression
+      setExpression(prev => `${prev.slice(0, -1)}${nextOperator}`);
     }
 
     setWaitingForOperand(true);
@@ -136,39 +118,29 @@ const Calculator = () => {
   };
 
   const handleEquals = () => {
-    if (!operator) return;
+    if (!operator || waitingForOperand) return;
     
     const inputValue = parseFloat(currentInput);
     let result;
     
-    if (prevValue !== null) {
-      switch (operator) {
-        case '+':
-          result = prevValue + inputValue;
-          break;
-        case '-':
-          result = prevValue - inputValue;
-          break;
-        case '*':
-          result = prevValue * inputValue;
-          break;
-        case '/':
-          result = prevValue / inputValue;
-          break;
-        default:
-          result = inputValue;
-      }
-
-      const formattedResult = formatNumber(result);
-    setExpression(prev => `${prev}=${formattedResult}`);
-    setCurrentInput(formattedResult);
-      setPrevValue(null);
-      setOperator(null);
-      setWaitingForOperand(false);
+    switch (operator) {
+      case '+': result = (prevValue || 0) + inputValue; break;
+      case '-': result = (prevValue || 0) - inputValue; break;
+      case '*': result = (prevValue || 0) * inputValue; break;
+      case '/': result = (prevValue || 0) / inputValue; break;
+      default: result = inputValue;
     }
-    
+    const formattedResult = formatNumber(result);
+    setExpression(prev => `${prev}=${formattedResult}`);
+    // Show only the current operation and result
+    setExpression(`${prevValue}${operator}${inputValue}=${formattedResult}`);
+    setCurrentInput(String(formattedResult));
+    setPrevValue(null);
+    setOperator(null);
+    setWaitingForOperand(false);
     logAction('equalsPressed', '=');
   };
+
 
   const displayClass = currentInput.length > MAX_OUTPUT_LENGTH ? 'small-text' : '';
   const expressionClass = expression.length > MAX_OUTPUT_LENGTH * 2 ? 'small-text' : '';
@@ -176,8 +148,8 @@ const Calculator = () => {
   return (
     <div className="calculator">
       <div className="display">
-        <div className={`expression ${expressionClass}`}>{expression}</div>
-        <div className={`current-input ${displayClass}`}>{currentInput}</div>
+        <div className={`expression`}>{expression}</div>
+        <div className={` ${displayClass} current-input`}>{currentInput}</div>
       </div>
       <div className="buttons">
         {/* First row */}
