@@ -1,6 +1,7 @@
 # Calculator with Audit Logging
 
-<img width="493" alt="image" src="https://github.com/user-attachments/assets/b2007da3-ff34-4482-b8b1-cbc7c3b01cbb" />
+<img width="406" alt="calculator-image" src="https://github.com/user-attachments/assets/0722b5ef-7142-4570-a687-b63ddc1c7d51" />
+
 
 
 A modern calculator application with full audit logging capabilities, built with React, Node.js, and MongoDB.
