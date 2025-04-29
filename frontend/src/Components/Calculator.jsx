@@ -143,7 +143,6 @@ const Calculator = () => {
 
 
   const displayClass = currentInput.length > MAX_OUTPUT_LENGTH ? 'small-text' : '';
-  const expressionClass = expression.length > MAX_OUTPUT_LENGTH * 2 ? 'small-text' : '';
 
   return (
     <div className="calculator">
