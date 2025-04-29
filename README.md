@@ -20,8 +20,8 @@ A modern calculator application with full audit logging capabilities, built with
 - **Responsive Design**:
   - Works on desktop and mobile devices
   - Clean, intuitive interface
-
-  - **View Audit logs** 
+    
+ - **View Audit logs** 
 - https://calculator-audit-log-app-production.up.railway.app/api/audit
 
 ## Technologies Used
