@@ -51,6 +51,18 @@ const Calculator = () => {
     setWaitingForOperand(false);
     logAction('clearPressed', 'AC');
   };
+  const clearOneDigit = () => {
+    if (waitingForOperand) return; // Can't backspace during operator input
+    
+    if (currentInput.length === 1) {
+      setCurrentInput('0');
+      setExpression(prev => prev.slice(0, -1));
+    } else {
+      setCurrentInput(prev => prev.slice(0, -1));
+      setExpression(prev => prev.slice(0, -1));
+    }
+    logAction('backspacePressed', '⌫');
+  };
 
   const inputDigit = (digit) => {
     const digitString = digit.toString()
@@ -229,7 +241,8 @@ const Calculator = () => {
           <button className="equals-btn" onClick={handleEquals}>
             =
           </button>
-          <button className="number-btn span-3" onClick={() => inputDigit(0)}>
+          <button className="function-btn" onClick={clearOneDigit}>⌫</button>
+          <button className="number-btn span-2" onClick={() => inputDigit(0)}>
             0
           </button>
         </div>
