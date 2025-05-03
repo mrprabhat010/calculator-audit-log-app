@@ -2,7 +2,7 @@ import axios from 'axios';
 import { handleApiError } from '../utils/errorhandlers';
 import {v4 as uuid} from 'uuid';
 
-const API_BASE_URL =  "http://localhost:8000/api" || process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const logAction = async (action,value) => {
 
