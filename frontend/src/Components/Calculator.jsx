@@ -1,252 +1,237 @@
 import React, { useState } from 'react';
+import Display from './Display';
+import ButtonPanel from './ButtonPanel';
+import { formatNumber, calculateResult, validateInput } from '../utils/CalculatorUtils';
+import { logAction } from '../Services/auditService';
 import './Calculator.css';
-import auditService from '../Services/auditService';
 
 const MAX_INPUT_LENGTH = 9;
 const MAX_OUTPUT_LENGTH = 12;
 
-//util function
-const formatNumber = (num) => {
-  // Format numbers to fit display constraints
-  const str = num.toString();
-  
-  if (str.length <= MAX_OUTPUT_LENGTH) {
-    return str;
-  }
-  
-  // Use scientific notation for very large/small numbers
-  return num.toExponential(8).replace(/(\.\d*?[1-9])0+e/, '$1e');
-};
-
 const Calculator = () => {
-  const [currentInput, setCurrentInput] = useState('0');
-  const [expression, setExpression] = useState('');
-  const [prevValue, setPrevValue] = useState(null);
-  const [operator, setOperator] = useState(null);
-  const [waitingForOperand, setWaitingForOperand] = useState(false);
-  const [history, setHistory] = useState([]);
+  const [state, setState] = useState({
+    currentInput: '0',
+    expression: '',
+    prevValue: null,
+    operator: null,
+    waitingForOperand: false,
+    error: null
+  });
 
-  const logAction = async (action, value) => {
-    const event = {
-      id: history.length + 1,
-      timestamp: Math.floor(Date.now() / 1000),
-      action,
-      value: String(value)
-    };
-    
-    setHistory([...history, event]);
-    
-    try {
-      await auditService.logAction(event);
-    } catch (error) {
-      console.error('Error logging action:', error);
-    }
+  const handleError = (error) => {
+    console.error('Calculator Error:', error);
+    setState(prev => ({ 
+      ...prev, 
+      error: error.message || 'Calculation error',
+      currentInput: 'Error'
+    }));
+    setTimeout(() => {
+      setState(prev => ({ ...prev, error: null }));
+    }, 3000);
   };
 
   const clearAll = () => {
-    setCurrentInput('0');
-    setExpression('');
-    setPrevValue(null);
-    setOperator(null);
-    setWaitingForOperand(false);
-    logAction('clearPressed', 'AC');
+    setState({
+      currentInput: '0',
+      expression: '',
+      prevValue: null,
+      operator: null,
+      waitingForOperand: false,
+      error: null
+    });
+    logAction('clearPressed', 'AC').catch(handleError);
   };
+
   const clearOneDigit = () => {
-    if (waitingForOperand) return; // Can't backspace during operator input
+    if (state.waitingForOperand) return;
     
-    if (currentInput.length === 1) {
-      setCurrentInput('0');
-      setExpression(prev => prev.slice(0, -1));
-    } else {
-      setCurrentInput(prev => prev.slice(0, -1));
-      setExpression(prev => prev.slice(0, -1));
-    }
-    logAction('backspacePressed', '⌫');
+    setState(prev => {
+      if (prev.currentInput.length === 1) {
+        return { 
+          ...prev, 
+          currentInput: '0',
+          expression: prev.expression.slice(0, -1)
+        };
+      }
+      return {
+        ...prev,
+        currentInput: prev.currentInput.slice(0, -1),
+        expression: prev.expression.slice(0, -1)
+      };
+    });
+    logAction('backspacePressed', '⌫').catch(handleError);
   };
 
   const inputDigit = (digit) => {
-    const digitString = digit.toString()
-    if (waitingForOperand) {
-      // Starting new input after operator
-      setCurrentInput(digit);
-      setExpression(prev => `${prev}${digit}`);
-      setWaitingForOperand(false);
-    } else {
-      // Continuing current input
-      if (currentInput.toString().replace('.', '').length >= MAX_INPUT_LENGTH) return;
-      setCurrentInput(prev => prev === '0' ? digitString : prev + digitString);
-      setExpression(prev => prev === '' ? digitString : prev + digitString);
+    try {
+      validateInput(digit);
+      
+      setState(prev => {
+        if(prev.currentInput==='Error'){
+          return {
+            ...prev,
+            currentInput: String(digit),
+            expression:'',
+            waitingForOperand: false,
+            error: null
+          };
+        }
+        else if (prev.waitingForOperand) {
+          return {
+            ...prev,
+            currentInput: String(digit),
+            expression: prev.expression + digit,
+            waitingForOperand: false,
+            error: null
+          };
+        }
+
+        else if (prev.currentInput.replace('.', '').length >= MAX_INPUT_LENGTH) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          currentInput: prev.currentInput === '0' ? String(digit) : prev.currentInput + digit,
+          expression: prev.expression === '' ? String(digit) : prev.expression + digit,
+          error: null
+        };
+      });
+      logAction('numberEntered', digit).catch(handleError);
+    } catch (error) {
+      handleError(error);
     }
-    logAction('numberEntered', digitString);
   };
 
   const inputDecimal = () => {
-    if (currentInput.includes('.')) return;
-    if (waitingForOperand) {
-      setCurrentInput('0.');
-      setExpression(expression + '0.');
-      setWaitingForOperand(false);
-      return;
-    }
+    try {
+      setState(prev => {
+        if(prev.currentInput==='Error'){
+          return {
+            ...prev,
+            currentInput: '0.',
+            expression:'',
+            waitingForOperand: false,
+            error: null
+          };
+        }
+        else if (prev.waitingForOperand) {
+          return {
+            ...prev,
+            currentInput: '0.',
+            expression: prev.expression + '0.',
+            waitingForOperand: false,
+            error: null
+          };
+        }
 
-    if (!currentInput.includes('.')) {
-      setCurrentInput(currentInput + '.');
-      setExpression(expression + '.');
+        else if (prev.currentInput.includes('.')) {
+          return prev;
+        }
+
+        else if (prev.currentInput.replace('.', '').length >= MAX_INPUT_LENGTH) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          currentInput: prev.currentInput + '.',
+          expression: prev.expression + '.',
+          error: null
+        };
+      });
+
+      logAction('decimalEntered', '.').catch(handleError);
+    } catch (error) {
+      handleError(error);
     }
-    logAction('decimalEntered', '.');
   };
 
   const performOperation = (nextOperator) => {
-    const inputValue = parseFloat(currentInput);
+    if(state.currentInput=='Error') return;
+    try {
+      setState(prev => {
+        const inputValue = parseFloat(prev.currentInput);
+        let newState = { ...prev };
 
-    if (operator && !waitingForOperand) {
-      const currentValue = prevValue || 0;
-      let newValue;
-      
-      switch (operator) {
-        case '+': newValue = currentValue + inputValue; break;
-        case '-': newValue = currentValue - inputValue; break;
-        case '*': newValue = currentValue * inputValue; break;
-        case '/': newValue = currentValue / inputValue; break;
-        default: newValue = inputValue;
-      }
+        if (prev.operator && !prev.waitingForOperand) {
+          const currentValue = prev.prevValue || 0;
+          try {
+            const result = calculateResult(currentValue, inputValue, prev.operator);
+            newState.prevValue = result;
+            newState.currentInput = formatNumber(result);
+            newState.expression = `${formatNumber(result)}${nextOperator}`;
+          } catch (error) {
+             handleError(error)
+          }
+        } else if (!prev.waitingForOperand) {
+          newState.prevValue = inputValue;
+          newState.expression = `${inputValue}${nextOperator}`;
+        } else {
+          newState.expression = `${prev.expression.slice(0, -1)}${nextOperator}`;
+        }
 
-      setPrevValue(newValue);
-      setCurrentInput(String(newValue));
-      // Only show current operation in expression
-      setExpression(`${newValue}${nextOperator}`);
-    } else if (!waitingForOperand) {
-      setPrevValue(inputValue);
-      // Start new operation expression
-      setExpression(`${inputValue}${nextOperator}`);
-    } else {
-      // Just update the operator in expression
-      setExpression(prev => `${prev.slice(0, -1)}${nextOperator}`);
+        return {
+          ...newState,
+          operator: nextOperator,
+          waitingForOperand: true,
+        };
+      });
+
+      logAction('operatorEntered', nextOperator).catch(handleError);
+    } catch (error) {
+      handleError(error);
     }
-
-    setWaitingForOperand(true);
-    setOperator(nextOperator);
-    logAction('operatorEntered', nextOperator);
   };
 
   const handleEquals = () => {
-    if (!operator || waitingForOperand) return;
-    
-    const inputValue = parseFloat(currentInput);
-    let result;
-    
-    switch (operator) {
-      case '+': result = (prevValue || 0) + inputValue; break;
-      case '-': result = (prevValue || 0) - inputValue; break;
-      case '*': result = (prevValue || 0) * inputValue; break;
-      case '/': result = (prevValue || 0) / inputValue; break;
-      default: result = inputValue;
+    try {
+      if (!state.operator || state.waitingForOperand) return;
+
+      setState(prev => {
+        const inputValue = parseFloat(prev.currentInput);
+        let result;
+        
+        try {
+          result = calculateResult(prev.prevValue || 0, inputValue, prev.operator);
+        } catch (error) {
+          handleError(error);
+        }
+
+        const formattedResult = formatNumber(result);
+        const newExpression = `${prev.prevValue}${prev.operator}${inputValue}=${formattedResult}`;
+
+        return {
+          currentInput: formattedResult,
+          expression: newExpression,
+          prevValue: null,
+          operator: null,
+          waitingForOperand: false,
+          error: null
+        };
+      });
+
+      logAction('equalsPressed', '=').catch(handleError);
+    } catch (error) {
+      handleError(error);
     }
-    const formattedResult = formatNumber(result);
-    setExpression(prev => `${prev}=${formattedResult}`);
-    // Show only the current operation and result
-    setExpression(`${prevValue}${operator}${inputValue}=${formattedResult}`);
-    setCurrentInput(String(formattedResult));
-    setPrevValue(null);
-    setOperator(null);
-    setWaitingForOperand(false);
-    logAction('equalsPressed', '=');
   };
-
-
-  const displayClass = currentInput.length > MAX_OUTPUT_LENGTH ? 'small-text' : '';
 
   return (
     <div className="calculator">
-      <div className="display">
-        <div className={`expression`}>{expression}</div>
-        <div className={` ${displayClass} current-input`}>{currentInput}</div>
-      </div>
-      <div className="buttons">
-        {/* First row */}
-        <div className="row">
-          <button className="span-2 function-btn" onClick={clearAll}>
-            AC
-          </button>
-          <button className="function-btn" onClick={inputDecimal}>
-            .
-          </button>
-          <button
-            className="operator-btn"
-            onClick={() => performOperation("/")}
-          >
-            /
-          </button>
-        </div>
-
-        {/* Second row */}
-        <div className="row">
-          <button
-            className="operator-btn"
-            onClick={() => performOperation("*")}
-          >
-            ×
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(7)}>
-            7
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(8)}>
-            8
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(9)}>
-            9
-          </button>
-        </div>
-
-        {/* Third row */}
-        <div className="row">
-          <button
-            className="operator-btn"
-            onClick={() => performOperation("-")}
-          >
-            −
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(4)}>
-            4
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(5)}>
-            5
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(6)}>
-            6
-          </button>
-        </div>
-
-        {/* Fourth row */}
-        <div className="row">
-          <button
-            className="operator-btn"
-            onClick={() => performOperation("+")}
-          >
-            +
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(1)}>
-            1
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(2)}>
-            2
-          </button>
-          <button className="number-btn" onClick={() => inputDigit(3)}>
-            3
-          </button>
-        </div>
-
-        {/* Fifth row */}
-        <div className="row">
-          <button className="equals-btn" onClick={handleEquals}>
-            =
-          </button>
-          <button className="function-btn" onClick={clearOneDigit}>⌫</button>
-          <button className="number-btn span-2" onClick={() => inputDigit(0)}>
-            0
-          </button>
-        </div>
-      </div>
+      <Display 
+        expression={state.expression}
+        currentInput={state.currentInput}
+        maxOutputLength={MAX_OUTPUT_LENGTH}
+      />
+      <ButtonPanel
+        onDigitClick={inputDigit}
+        onOperatorClick={performOperation}
+        onClear={clearAll}
+        onDecimal={inputDecimal}
+        onEquals={handleEquals}
+        onBackspace={clearOneDigit}
+      />
     </div>
   );
 };

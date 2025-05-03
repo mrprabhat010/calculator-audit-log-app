@@ -1,17 +1,27 @@
 import axios from 'axios';
+import { handleApiError } from '../utils/errorhandlers';
+import {v4 as uuid} from 'uuid';
 
-const API_BASE_URL =  import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const auditService = {
-  logAction: async (actionData) => {
-    try {
-      const response = await axios.post(`${API_BASE_URL}/audit`, actionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error logging action:', error);
-      throw error;
-    }
-  },
+export const logAction = async (action,value) => {
+
+  try {
+    const actionData = {
+      id: uuid(),
+      timestamp: Math.floor(Date.now() / 1000),
+      action,
+      value: String(value)
+    };
+    const response = await axios.post(`${API_BASE_URL}/audit`, actionData, {
+      timeout: 5000,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
-
-export default auditService;
