@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Display from './Display';
 import ButtonPanel from './ButtonPanel';
 import { formatNumber, calculateResult, validateInput } from '../utils/CalculatorUtils';
-import { logAction } from '../services/auditService';
+import { logAction } from '../Services/auditService';
 import './Calculator.css';
 
 const MAX_INPUT_LENGTH = 9;
